@@ -7,6 +7,8 @@
 #include <string>
 #include <vector> // Added for std::vector
 
+asio::thread_pool pool(std::max(1u, std::thread::hardware_concurrency()));
+
 // Example: function that always throws an exception
 std::future<std::string> failing_operation() {
     return std::async(std::launch::async, []() -> std::string {
@@ -34,7 +36,7 @@ asio::awaitable<void> error_handling_example() {
     
     // Example 1: Handle guaranteed exception
     try {
-        auto result = co_await asio_future::make_awaitable(failing_operation());
+        auto result = co_await asio_future::make_awaitable(failing_operation(), pool);
         std::cout << "This should not print: " << result << std::endl;
     } catch (const std::runtime_error& e) {
         std::cout << "Caught runtime_error: " << e.what() << std::endl;
@@ -48,7 +50,7 @@ asio::awaitable<void> error_handling_example() {
     for (int value : test_values) {
         try {
             std::cout << "Testing value: " << value << std::endl;
-            auto result = co_await asio_future::make_awaitable(risky_calculation(value));
+            auto result = co_await asio_future::make_awaitable(risky_calculation(value), pool);
             std::cout << "Success - Result: " << result << std::endl;
         } catch (const std::invalid_argument& e) {
             std::cout << "Invalid argument: " << e.what() << std::endl;

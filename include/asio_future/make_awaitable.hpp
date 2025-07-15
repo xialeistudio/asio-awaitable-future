@@ -4,17 +4,8 @@
 #include <future>
 #include <optional>
 #include <tuple>
-#include <thread>
 
 namespace asio_future {
-
-namespace detail {
-    // Default thread pool for blocking operations
-    inline asio::thread_pool& get_default_pool() {
-        static asio::thread_pool pool(std::max(1u, std::thread::hardware_concurrency()));
-        return pool;
-    }
-}
 
 /**
  * @brief Converts std::future<T> to asio::awaitable<T>
@@ -54,35 +45,6 @@ auto make_awaitable(std::future<T> future, CompletionToken&& token, asio::thread
         },
         token
     );
-}
-
-/**
- * @brief Converts std::future<T> to asio::awaitable<T> using default thread pool
- * 
- * This is the main interface for converting futures to awaitables.
- * Uses a default thread pool for blocking operations.
- * 
- * @tparam T The type contained in the future
- * @param future The future to convert
- * @return An awaitable that can be co_awaited
- */
-template<typename T>
-asio::awaitable<T> make_awaitable(std::future<T> future) {
-    auto [result, exception] = co_await make_awaitable(
-        std::move(future), 
-        asio::use_awaitable,
-        detail::get_default_pool()
-    );
-    
-    if (exception) {
-        std::rethrow_exception(exception);
-    }
-    
-    if (result) {
-        co_return std::move(*result);
-    }
-    
-    throw std::runtime_error("asio_future: Unknown error - no result and no exception");
 }
 
 /**

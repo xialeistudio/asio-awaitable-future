@@ -7,6 +7,7 @@
 #include <string>
 
 // Simulate database connection
+asio::thread_pool pool(std::max(1u, std::thread::hardware_concurrency()));
 class DatabaseConnection {
 public:
     std::future<std::string> query(const std::string& sql) {
@@ -44,19 +45,22 @@ asio::awaitable<void> database_operations() {
         
         // Example 1: Simple SELECT query
         auto users = co_await asio_future::make_awaitable(
-            db.query("SELECT * FROM users WHERE active = 1")
+            db.query("SELECT * FROM users WHERE active = 1"),
+            pool
         );
         std::cout << "Users query result: " << users << std::endl;
         
         // Example 2: INSERT operation
         auto insert_result = co_await asio_future::make_awaitable(
-            db.query("INSERT INTO users (name, email) VALUES ('John', 'john@example.com')")
+            db.query("INSERT INTO users (name, email) VALUES ('John', 'john@example.com')"),
+            pool
         );
         std::cout << "Insert result: " << insert_result << std::endl;
         
         // Example 3: Get row count
         auto user_count = co_await asio_future::make_awaitable(
-            db.count("users")
+            db.count("users"),
+            pool
         );
         std::cout << "Total users: " << user_count << std::endl;
         
@@ -66,9 +70,9 @@ asio::awaitable<void> database_operations() {
         auto query2 = db.query("SELECT * FROM orders WHERE status = 'pending'");
         auto query3 = db.count("products");
         
-        auto result1 = co_await asio_future::make_awaitable(std::move(query1));
-        auto result2 = co_await asio_future::make_awaitable(std::move(query2));
-        auto result3 = co_await asio_future::make_awaitable(std::move(query3));
+        auto result1 = co_await asio_future::make_awaitable(std::move(query1), pool);
+        auto result2 = co_await asio_future::make_awaitable(std::move(query2), pool);
+        auto result3 = co_await asio_future::make_awaitable(std::move(query3), pool);
         
         std::cout << "Products: " << result1 << std::endl;
         std::cout << "Orders: " << result2 << std::endl;

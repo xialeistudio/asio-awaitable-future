@@ -6,6 +6,7 @@
 #include <chrono>
 #include <string>
 
+asio::thread_pool pool(std::max(1u, std::thread::hardware_concurrency()));
 // Example: simulate some async work that returns std::future
 std::future<std::string> simulate_async_work(const std::string& task) {
     return std::async(std::launch::async, [task] {
@@ -36,7 +37,8 @@ asio::awaitable<void> example_coroutine() {
     try {
         // Example 1: Basic string result
         auto result1 = co_await asio_future::make_awaitable(
-            simulate_async_work("Database query")
+            simulate_async_work("Database query"),
+            pool
         );
         std::cout << "Result 1: " << result1 << std::endl;
         
@@ -45,9 +47,9 @@ asio::awaitable<void> example_coroutine() {
         auto future2 = simulate_async_work("Task 2");
         auto future3 = calculate_fibonacci(10);
         
-        auto result2 = co_await asio_future::make_awaitable(std::move(future1));
-        auto result3 = co_await asio_future::make_awaitable(std::move(future2));
-        auto result4 = co_await asio_future::make_awaitable(std::move(future3));
+        auto result2 = co_await asio_future::make_awaitable(std::move(future1), pool);
+        auto result3 = co_await asio_future::make_awaitable(std::move(future2), pool);
+        auto result4 = co_await asio_future::make_awaitable(std::move(future3), pool);
         
         std::cout << "Result 2: " << result2 << std::endl;
         std::cout << "Result 3: " << result3 << std::endl;
