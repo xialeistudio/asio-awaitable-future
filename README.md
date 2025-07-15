@@ -18,6 +18,8 @@ A header-only C++ library that seamlessly converts `std::future<T>` to `asio::aw
 #include <future>
 #include <iostream>
 
+asio::thread_pool pool(std::max(1u, std::thread::hardware_concurrency()));
+
 // Example: database query returning std::future
 std::future<std::string> query_database(const std::string& sql) {
     return std::async(std::launch::async, [sql] {
@@ -32,7 +34,8 @@ asio::awaitable<void> example_coroutine() {
     try {
         // Convert future to awaitable seamlessly
         auto result = co_await asio_future::make_awaitable(
-            query_database("SELECT * FROM users")
+            query_database("SELECT * FROM users"),
+            pool
         );
         std::cout << "Success: " << result << std::endl;
     } catch (const std::exception& e) {
